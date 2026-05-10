@@ -39,6 +39,7 @@ void* handle_RAM_thread(void* arg)
             // sem_post(sem_available);
             sem_post(sem_filled);   // call 'consumer' get data from queue
             sleep(2);
+            continue;
         }
         
         pthread_mutex_lock(&shareData->shm_lock);
@@ -101,6 +102,7 @@ void* handle_LinkState_thread(void* arg)
             // sem_post(sem_available);
             sem_post(sem_filled);   // call 'consumer' get data from queue
             sleep(2);
+            continue;
         }
         
         pthread_mutex_lock(&shareData->shm_lock);
