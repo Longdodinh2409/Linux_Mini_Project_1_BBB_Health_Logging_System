@@ -197,5 +197,5 @@ int main()
         printf("Create shared memory fail!\n");
     }
 
-    return 88;
+    return 0;
 }
