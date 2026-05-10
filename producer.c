@@ -109,6 +109,12 @@ void* handle_LinkState_thread(void* arg)
 
         FILE* ptr_file;
         ptr_file = fopen("/sys/class/net/eth0/carrier", "r");
+        if (ptr_file == NULL)
+        {
+            printf("There is a problem on open /proc/meminfo of RAM thread!\n");
+            handle_exit(98);
+            break;
+        }
 
         int c = fgetc(ptr_file);
         if (c != EOF)
