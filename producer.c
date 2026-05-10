@@ -20,7 +20,6 @@ void handle_exit(int sig)
 
 void* handle_RAM_thread(void* arg)
 {
-    SensorData sRAMData;
     while((shareData->IsContinueLoop))
     {
         sem_wait(sem_available);
@@ -51,12 +50,9 @@ void* handle_RAM_thread(void* arg)
         {
             if (!strcmp(name_buf, "MemAvailable:"))
             {
-                sRAMData.sensorType = SENSOR_RAM;
-                sRAMData.sensorVal = val_buf;
-
-                // copy sRAMData into queue of shared mem 
-                shareData->q_buffer[shareData->tail].sensorType = sRAMData.sensorType;
-                shareData->q_buffer[shareData->tail].sensorVal = sRAMData.sensorVal;
+                // copy RAM available size into queue of shared mem 
+                shareData->q_buffer[shareData->tail].sensorType = SENSOR_RAM;
+                shareData->q_buffer[shareData->tail].sensorVal = val_buf;
 
                 // count tail of queue
                 shareData->tail = (shareData->tail + 1) % QUEUE_SIZE;
@@ -81,7 +77,6 @@ void* handle_RAM_thread(void* arg)
 
 void* handle_LinkState_thread(void* arg)
 {
-    SensorData sLinkStateData;
     while((shareData->IsContinueLoop))
     {
         sem_wait(sem_available);
@@ -109,12 +104,9 @@ void* handle_LinkState_thread(void* arg)
         int c = fgetc(ptr_file);
         if (c != EOF)
         {
-            sLinkStateData.sensorType = SENSOR_LINK_STATE;
-            sLinkStateData.sensorVal = c;
-
-            // copy sLinkStateData into queue of shared mem 
-            shareData->q_buffer[shareData->tail].sensorType = sLinkStateData.sensorType;
-            shareData->q_buffer[shareData->tail].sensorVal = sLinkStateData.sensorVal;
+            // copy Link State into queue of shared mem 
+            shareData->q_buffer[shareData->tail].sensorType = SENSOR_LINK_STATE;
+            shareData->q_buffer[shareData->tail].sensorVal = c;
 
             // count tail of queue
             shareData->tail = (shareData->tail + 1) % QUEUE_SIZE;
