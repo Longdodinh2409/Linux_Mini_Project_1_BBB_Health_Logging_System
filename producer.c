@@ -15,7 +15,10 @@ void handle_exit(int sig)
     shareData->IsContinueLoop = false;
 
     // wake up all semaphores
-    sem_post(sem_available);
+    for (int i = 0; i < NUM_PRODUCER_THREADS; i++)
+    {
+        sem_post(sem_available);
+    }
     sem_post(sem_filled);
 }
 
@@ -28,7 +31,6 @@ void* handle_RAM_thread(void* arg)
         // Wake up then check IMMEDIATELY!
         if (!shareData->IsContinueLoop)
         {
-            sem_post(sem_filled);
             printf("\n[Warning] Just received Exit signal. Start to cleaning process... \n");
             break;
         }
@@ -36,14 +38,11 @@ void* handle_RAM_thread(void* arg)
         if (shareData->count == QUEUE_SIZE)
         {
             printf("RAM thread: Queue is full!\n");
-            // sem_post(sem_available);
             sem_post(sem_filled);   // call 'consumer' get data from queue
             sleep(2);
             continue;
         }
         
-        pthread_mutex_lock(&shareData->shm_lock);
-
         FILE* ptr_file;
         ptr_file = fopen("/proc/meminfo", "r");
         if (ptr_file == NULL)
@@ -52,6 +51,8 @@ void* handle_RAM_thread(void* arg)
             handle_exit(99);
             break;
         }
+        
+        pthread_mutex_lock(&shareData->shm_lock);
 
         char name_buf[16];
         unsigned long val_buf;
@@ -92,7 +93,7 @@ void* handle_LinkState_thread(void* arg)
         // Wake up then check IMMEDIATELY!
         if (!shareData->IsContinueLoop)
         {
-            sem_post(sem_filled);
+            // sem_post(sem_filled);
             printf("\n[Warning] Just received Exit signal. Start to cleaning process... \n");
             break;
         }
@@ -106,8 +107,6 @@ void* handle_LinkState_thread(void* arg)
             continue;
         }
         
-        pthread_mutex_lock(&shareData->shm_lock);
-
         FILE* ptr_file;
         ptr_file = fopen("/sys/class/net/eth0/carrier", "r");
         if (ptr_file == NULL)
@@ -116,6 +115,8 @@ void* handle_LinkState_thread(void* arg)
             handle_exit(98);
             break;
         }
+        
+        pthread_mutex_lock(&shareData->shm_lock);
 
         int c = fgetc(ptr_file);
         if (c != EOF)
@@ -169,6 +170,11 @@ int main()
         // Init semaphore
         sem_available = sem_open(SEM_AVAILABLE_NAME, O_CREAT, 0666, SEM_AVAILABLE_SIZE_INIT);
         sem_filled = sem_open(SEM_FILLED_NAME, O_CREAT, 0666, SEM_FILLED_SIZE_INIT);
+
+        // init head, tail & count of queue
+        shareData->head = 0;
+        shareData->tail = 0;
+        shareData->count = 0;
 
         // Sign in take Ctrl+C event
         signal(SIGINT, handle_exit);

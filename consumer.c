@@ -13,7 +13,10 @@ void handle_exit(int sig)
     shareData->IsContinueLoop = false;
 
     // wake up all semaphores
-    sem_post(sem_available);
+    for (int i = 0; i < NUM_PRODUCER_THREADS; i++)
+    {
+        sem_post(sem_available);
+    }
     sem_post(sem_filled);
 }
 
@@ -65,10 +68,6 @@ int main()
             // Wake up then check IMMEDIATELY!
             if (!shareData->IsContinueLoop)
             {
-                for (int i = 0; i < NUM_PRODUCER_THREADS; i++)
-                {
-                    sem_post(sem_available);
-                }
                 printf("\n[Warning] Just received Exit signal. Start to cleaning process... \n");
                 break;
             }
