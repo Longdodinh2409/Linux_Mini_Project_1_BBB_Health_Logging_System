@@ -10,7 +10,6 @@ SensorData sSensorData;
 
 void handle_exit(int sig)
 {
-    printf("\n[Warning] Just received Exit signal (%d). Start to cleaning process... \n", sig);
     shareData->IsContinueLoop = false;
 
     // wake up all semaphores
@@ -70,6 +69,7 @@ int main()
                 {
                     sem_post(sem_available);
                 }
+                printf("\n[Warning] Just received Exit signal. Start to cleaning process... \n");
                 break;
             }
 

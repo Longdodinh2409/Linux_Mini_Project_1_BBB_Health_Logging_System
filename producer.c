@@ -12,7 +12,6 @@ int return_check;
 
 void handle_exit(int sig)
 {
-    printf("\n[Warning] Just received Exit signal (%d). Start to cleaning process... \n", sig);
     shareData->IsContinueLoop = false;
 
     // wake up all semaphores
@@ -30,6 +29,7 @@ void* handle_RAM_thread(void* arg)
         if (!shareData->IsContinueLoop)
         {
             sem_post(sem_filled);
+            printf("\n[Warning] Just received Exit signal. Start to cleaning process... \n");
             break;
         }
 
@@ -93,6 +93,7 @@ void* handle_LinkState_thread(void* arg)
         if (!shareData->IsContinueLoop)
         {
             sem_post(sem_filled);
+            printf("\n[Warning] Just received Exit signal. Start to cleaning process... \n");
             break;
         }
 
