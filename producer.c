@@ -171,6 +171,11 @@ int main()
         sem_available = sem_open(SEM_AVAILABLE_NAME, O_CREAT, 0666, SEM_AVAILABLE_SIZE_INIT);
         sem_filled = sem_open(SEM_FILLED_NAME, O_CREAT, 0666, SEM_FILLED_SIZE_INIT);
 
+        // init head, tail & count of queue
+        shareData->head = 0;
+        shareData->tail = 0;
+        shareData->count = 0;
+
         // Sign in take Ctrl+C event
         signal(SIGINT, handle_exit);
 
