@@ -67,8 +67,10 @@ int main()
             // Wake up then check IMMEDIATELY!
             if (!shareData->IsContinueLoop)
             {
-                sem_post(sem_available);    // once for thread read RAM
-                sem_post(sem_available);    // once for thread read Link state
+                for (int i = 0; i < NUM_PRODUCER_THREADS; i++)
+                {
+                    sem_post(sem_available);
+                }
                 break;
             }
             
