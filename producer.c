@@ -8,9 +8,10 @@ pthread_t RAM_thread, LinkState_thread;
 sem_t* sem_available = NULL;
 sem_t* sem_filled = NULL;
 
+int return_check;
+
 void handle_exit(int sig)
 {
-    printf("\n[Warning] Just received Exit signal (%d). Start to cleaning process... \n", sig);
     shareData->IsContinueLoop = false;
 
     // wake up all semaphores
@@ -20,7 +21,6 @@ void handle_exit(int sig)
 
 void* handle_RAM_thread(void* arg)
 {
-    SensorData sRAMData;
     while((shareData->IsContinueLoop))
     {
         sem_wait(sem_available);
@@ -29,6 +29,7 @@ void* handle_RAM_thread(void* arg)
         if (!shareData->IsContinueLoop)
         {
             sem_post(sem_filled);
+            printf("\n[Warning] Just received Exit signal. Start to cleaning process... \n");
             break;
         }
 
@@ -38,12 +39,19 @@ void* handle_RAM_thread(void* arg)
             // sem_post(sem_available);
             sem_post(sem_filled);   // call 'consumer' get data from queue
             sleep(2);
+            continue;
         }
         
         pthread_mutex_lock(&shareData->shm_lock);
 
         FILE* ptr_file;
         ptr_file = fopen("/proc/meminfo", "r");
+        if (ptr_file == NULL)
+        {
+            printf("There is a problem on open /proc/meminfo of RAM thread!\n");
+            handle_exit(99);
+            break;
+        }
 
         char name_buf[16];
         unsigned long val_buf;
@@ -51,17 +59,13 @@ void* handle_RAM_thread(void* arg)
         {
             if (!strcmp(name_buf, "MemAvailable:"))
             {
-                sRAMData.sensorType = SENSOR_RAM;
-                sRAMData.sensorVal = val_buf;
-
-                // copy sRAMData into queue of shared mem 
-                shareData->q_buffer[shareData->tail].sensorType = sRAMData.sensorType;
-                shareData->q_buffer[shareData->tail].sensorVal = sRAMData.sensorVal;
+                // copy RAM available size into queue of shared mem 
+                shareData->q_buffer[shareData->tail].sensorType = SENSOR_RAM;
+                shareData->q_buffer[shareData->tail].sensorVal = val_buf;
 
                 // count tail of queue
                 shareData->tail = (shareData->tail + 1) % QUEUE_SIZE;
                 shareData->count++;
-
 
                 printf("%s %lu kB\n", name_buf, val_buf);
                 break;
@@ -81,7 +85,6 @@ void* handle_RAM_thread(void* arg)
 
 void* handle_LinkState_thread(void* arg)
 {
-    SensorData sLinkStateData;
     while((shareData->IsContinueLoop))
     {
         sem_wait(sem_available);
@@ -90,6 +93,7 @@ void* handle_LinkState_thread(void* arg)
         if (!shareData->IsContinueLoop)
         {
             sem_post(sem_filled);
+            printf("\n[Warning] Just received Exit signal. Start to cleaning process... \n");
             break;
         }
 
@@ -99,22 +103,26 @@ void* handle_LinkState_thread(void* arg)
             // sem_post(sem_available);
             sem_post(sem_filled);   // call 'consumer' get data from queue
             sleep(2);
+            continue;
         }
         
         pthread_mutex_lock(&shareData->shm_lock);
 
         FILE* ptr_file;
         ptr_file = fopen("/sys/class/net/eth0/carrier", "r");
+        if (ptr_file == NULL)
+        {
+            printf("There is a problem on open /proc/meminfo of RAM thread!\n");
+            handle_exit(98);
+            break;
+        }
 
         int c = fgetc(ptr_file);
         if (c != EOF)
         {
-            sLinkStateData.sensorType = SENSOR_LINK_STATE;
-            sLinkStateData.sensorVal = c;
-
-            // copy sLinkStateData into queue of shared mem 
-            shareData->q_buffer[shareData->tail].sensorType = sLinkStateData.sensorType;
-            shareData->q_buffer[shareData->tail].sensorVal = sLinkStateData.sensorVal;
+            // copy Link State into queue of shared mem 
+            shareData->q_buffer[shareData->tail].sensorType = SENSOR_LINK_STATE;
+            shareData->q_buffer[shareData->tail].sensorVal = c;
 
             // count tail of queue
             shareData->tail = (shareData->tail + 1) % QUEUE_SIZE;
@@ -166,9 +174,19 @@ int main()
         signal(SIGINT, handle_exit);
 
         // Init thread
-        pthread_create(&RAM_thread, NULL, handle_RAM_thread, NULL);
-        pthread_create(&LinkState_thread, NULL, handle_LinkState_thread, NULL);
-        
+        return_check = pthread_create(&RAM_thread, NULL, handle_RAM_thread, NULL);
+        if (return_check != 0)
+        {
+            printf("Fail in create RAM thread!\n");
+            return -1;
+        }
+
+        return_check = pthread_create(&LinkState_thread, NULL, handle_LinkState_thread, NULL);
+        if (return_check != 0)
+        {
+            printf("Fail in create Link State thread!\n");
+            return -1;
+        }
 
         // Process end
         pthread_join(RAM_thread, NULL);

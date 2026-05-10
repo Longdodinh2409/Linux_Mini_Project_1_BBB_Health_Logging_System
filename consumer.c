@@ -10,7 +10,6 @@ SensorData sSensorData;
 
 void handle_exit(int sig)
 {
-    printf("\n[Warning] Just received Exit signal (%d). Start to cleaning process... \n", sig);
     shareData->IsContinueLoop = false;
 
     // wake up all semaphores
@@ -62,15 +61,19 @@ int main()
         while(shareData->IsContinueLoop)
         {
             sem_wait(sem_filled);
-            pthread_mutex_lock(&shareData->shm_lock);
             
             // Wake up then check IMMEDIATELY!
             if (!shareData->IsContinueLoop)
             {
-                sem_post(sem_available);    // once for thread read RAM
-                sem_post(sem_available);    // once for thread read Link state
+                for (int i = 0; i < NUM_PRODUCER_THREADS; i++)
+                {
+                    sem_post(sem_available);
+                }
+                printf("\n[Warning] Just received Exit signal. Start to cleaning process... \n");
                 break;
             }
+
+            pthread_mutex_lock(&shareData->shm_lock);
             
             // Main task
             // get data

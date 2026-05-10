@@ -19,6 +19,7 @@
 #include <unistd.h>
 
 #define QUEUE_SIZE  (5)
+#define NUM_PRODUCER_THREADS    (2)
 
 #define SHM_SIZE    (4096)
 #define SHM_NAME    ("bbb_health_shm")
