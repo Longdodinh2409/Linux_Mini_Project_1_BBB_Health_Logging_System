@@ -8,6 +8,8 @@ pthread_t RAM_thread, LinkState_thread;
 sem_t* sem_available = NULL;
 sem_t* sem_filled = NULL;
 
+int return_check;
+
 void handle_exit(int sig)
 {
     printf("\n[Warning] Just received Exit signal (%d). Start to cleaning process... \n", sig);
@@ -43,6 +45,12 @@ void* handle_RAM_thread(void* arg)
 
         FILE* ptr_file;
         ptr_file = fopen("/proc/meminfo", "r");
+        if (ptr_file == NULL)
+        {
+            printf("There is a problem on open /proc/meminfo of RAM thread!\n");
+            handle_exit(99);
+            break;
+        }
 
         char name_buf[16];
         unsigned long val_buf;
@@ -57,7 +65,6 @@ void* handle_RAM_thread(void* arg)
                 // count tail of queue
                 shareData->tail = (shareData->tail + 1) % QUEUE_SIZE;
                 shareData->count++;
-
 
                 printf("%s %lu kB\n", name_buf, val_buf);
                 break;
@@ -158,9 +165,19 @@ int main()
         signal(SIGINT, handle_exit);
 
         // Init thread
-        pthread_create(&RAM_thread, NULL, handle_RAM_thread, NULL);
-        pthread_create(&LinkState_thread, NULL, handle_LinkState_thread, NULL);
-        
+        return_check = pthread_create(&RAM_thread, NULL, handle_RAM_thread, NULL);
+        if (return_check != 0)
+        {
+            printf("Fail in create RAM thread!\n");
+            return -1;
+        }
+
+        return_check = pthread_create(&LinkState_thread, NULL, handle_LinkState_thread, NULL);
+        if (return_check != 0)
+        {
+            printf("Fail in create Link State thread!\n");
+            return -1;
+        }
 
         // Process end
         pthread_join(RAM_thread, NULL);
