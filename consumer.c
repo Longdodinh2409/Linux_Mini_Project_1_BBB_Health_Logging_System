@@ -62,7 +62,6 @@ int main()
         while(shareData->IsContinueLoop)
         {
             sem_wait(sem_filled);
-            pthread_mutex_lock(&shareData->shm_lock);
             
             // Wake up then check IMMEDIATELY!
             if (!shareData->IsContinueLoop)
@@ -73,6 +72,8 @@ int main()
                 }
                 break;
             }
+
+            pthread_mutex_lock(&shareData->shm_lock);
             
             // Main task
             // get data
